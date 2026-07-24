@@ -1,0 +1,15 @@
+# Node dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables & secrets
+.env
+**/.env
+
+# Prisma generated files & migrations cache
+prisma/migrations/
+
+# Build outputs & logs
+dist/
+*.log
+.DS_Store
