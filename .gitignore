@@ -12,4 +12,25 @@ prisma/migrations/
 # Build outputs & logs
 dist/
 *.log
+.DS_Store# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment variables & secrets
+.env
+*/.env
+.env.local
+*.env
+
+# Build outputs & caches
+dist/
+build/
+.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS and Editor files
 .DS_Store
+Thumbs.db
+.vscode/

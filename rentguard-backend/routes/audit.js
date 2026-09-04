@@ -123,19 +123,60 @@ router.get('/lease/:leaseId/verify', authenticateToken, async (req, res) => {
 
 // 3. GET /api/audit/lease/:leaseId/logs - Fetch all logs
 router.get('/lease/:leaseId/logs', authenticateToken, async (req, res) => {
-    try {
-        const logs = await prisma.auditLog.findMany({
-            where: { leaseId: req.params.leaseId },
-            orderBy: { timestamp: 'desc' },
-            include: {
-                submittedBy: { select: { id: true, name: true, role: true } }
-            }
-        });
+  const { leaseId } = req.params;
 
-        res.json({ logs });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+  try {
+    const lease = await prisma.lease.findUnique({
+      where: { id: leaseId },
+      include: {
+        landlord: { select: { name: true, email: true } },
+        tenant: { select: { name: true, email: true } },
+      },
+    });
+
+    const logs = await prisma.auditLog.findMany({
+      where: { leaseId },
+      orderBy: { timestamp: 'asc' },
+    });
+
+    res.json({ lease, logs });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Sign off on an audit block (Landlord only)
+router.patch('/log/:logId/sign-off', authenticateToken, async (req, res) => {
+  const { logId } = req.params;
+
+  try {
+    const log = await prisma.auditLog.findUnique({
+      where: { id: logId },
+      include: { lease: true },
+    });
+
+    if (!log) {
+      return res.status(404).json({ error: 'Audit log not found.' });
     }
+
+    if (log.lease.landlordId !== req.user.id) {
+      return res.status(403).json({ error: 'Only the landlord of this property can sign off on condition logs.' });
+    }
+
+    const updatedLog = await prisma.auditLog.update({
+      where: { id: logId },
+      data: {
+        // Storing signature status in metadata or note if not in core schema
+        conditionNotes: log.conditionNotes.includes('[LANDLORD_SIGNED]')
+          ? log.conditionNotes
+          : `${log.conditionNotes} [LANDLORD_SIGNED]`,
+      },
+    });
+
+    res.json({ message: 'Log successfully acknowledged and signed off.', log: updatedLog });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

@@ -87,4 +87,36 @@ router.get('/my-leases', authenticateToken, async (req, res) => {
     }
 });
 
+// Get all leases for the logged-in landlord
+router.get('/my-leases', authenticateToken, async (req, res) => {
+  try {
+    const leases = await prisma.lease.findMany({
+      where: { landlordId: req.user.id },
+      include: {
+        tenant: { select: { id: true, name: true, email: true } },
+        auditLogs: { select: { id: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ leases });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get the active lease for the logged-in tenant
+router.get('/active-lease', authenticateToken, async (req, res) => {
+  try {
+    const lease = await prisma.lease.findFirst({
+      where: { tenantId: req.user.id },
+      include: {
+        landlord: { select: { name: true, email: true } },
+      },
+    });
+    res.json({ lease });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
