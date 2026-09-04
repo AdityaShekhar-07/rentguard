@@ -26,8 +26,11 @@ cd rentguard-backend
 npm install
 npx prisma db push
 npx nodemon server.js
+```
 
 ### Frontend
+```bash
 cd rentguard-frontend
 npm install
 npm run dev
+```
